@@ -1,0 +1,48 @@
+# Nginx Proxy Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-proxy-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-proxy
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy
+    spec:
+      containers:
+      - name: nginx
+        # Using the official unprivileged image for production-grade security
+        image: nginxinc/nginx-unprivileged:alpine
+        ports:
+        - containerPort: 8443
+        volumeMounts:
+        - name: nginx-config-volume
+          mountPath: /etc/nginx/conf.d/ # Mount ConfigMap 
+        - name: tls-secret-volume
+          mountPath: /etc/nginx/ssl/  # Mount TLS Secret 
+          readOnly: true
+      volumes:
+      - name: nginx-config-volume
+        configMap:
+          name: nginx-configmap
+      - name: tls-secret-volume
+        secret:
+          secretName: nginx-secret
+---
+# Nginx LoadBalancer Service (External)
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-proxy-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx-proxy
+  ports:
+    - protocol: TCP
+      port: 443
+      targetPort: 8443
