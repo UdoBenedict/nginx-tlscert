@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-configmap
+data:
+  default.conf: |
+    server {
+        listen 8443 ssl;
+        server_name k8s.project.local;
+
+        # Point to the locations of the SSL certificates 
+        ssl_certificate /etc/nginx/ssl/tls.crt;
+        ssl_certificate_key /etc/nginx/ssl/tls.key;
+
+        location / {
+            proxy_pass http://backend-service:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+        }
+    }
